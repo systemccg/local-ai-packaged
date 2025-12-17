@@ -1,0 +1,100 @@
+volumes:
+  n8n_storage:
+    external: true
+
+x-n8n: &service-n8n
+  image: n8nio/n8n:latest
+  environment:
+    - DB_TYPE=postgresdb
+    - DB_POSTGRESDB_HOST=db
+    - DB_POSTGRESDB_USER=postgres
+    - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_POSTGRESDB_DATABASE=postgres
+    - N8N_DIAGNOSTICS_ENABLED=false
+    - N8N_PERSONALIZATION_ENABLED=false
+    - N8N_ENCRYPTION_KEY
+    - N8N_USER_MANAGEMENT_JWT_SECRET
+    - WEBHOOK_URL=https://n8n.leadingai.info/
+    - N8N_HOST=n8n.leadingai.info
+    - N8N_PROTOCOL=https
+    - N8N_EDITOR_BASE_URL=https://n8n.leadingai.info/
+    - VUE_APP_URL_BASE_API=https://n8n.leadingai.info/
+    
+    # ADD YOUR WORKFLOW ORCHESTRATION CONFIG HERE
+    # Execution Control
+    - MAX_PARALLEL_EXECUTIONS=10
+    - DEFAULT_TIMEOUT_SECONDS=120
+    - WORKFLOW_CACHE_TTL=3600
+    
+    # Phase-specific timeouts
+    - PHASE_B_TIMEOUT=30
+    - PHASE_C_TIMEOUT=120
+    - PHASE_D_TIMEOUT=60
+    - PHASE_E_TIMEOUT=90
+    
+    # Service endpoints (internal webhooks)
+    - ORCHESTRATOR_BASE_URL=https://n8n.leadingai.info
+    - WEBHOOK_PATH_PREFIX=/webhook
+    
+    # Resource limits
+    - MAX_PARALLEL_ENRICHMENTS=10
+    - MAX_API_CALLS_PER_EXECUTION=100
+    - MAX_EXECUTION_TIME_MINUTES=10
+    
+    # Feature flags
+    - ENABLE_SMART_CACHING=true
+    - ENABLE_DEPENDENCY_RESOLUTION=true
+    - ENABLE_PARALLEL_EXECUTION=true
+    
+    # External service configuration
+    - AI_MODEL_PRIMARY=claude-opus-4-1-20250805
+    - AI_MODEL_SECONDARY=gpt-4-turbo
+    - ENRICHMENT_API_ENDPOINT=${ENRICHMENT_API_ENDPOINT}
+    - ENRICHMENT_API_KEY=${ENRICHMENT_API_KEY}
+    
+services:
+  n8n-import:
+    <<: *service-n8n
+    container_name: n8n-import
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - "n8n import:credentials --separate --input=/backup/credentials && n8n import:workflow --separate --input=/backup/workflows"
+    volumes:
+      - ./n8n/backup:/backup
+    # ADD: Config files volume
+      - ./config:/config:ro
+
+  n8n:
+    <<: *service-n8n
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=n8n.leadingai.info
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n.leadingai.info/
+      - N8N_EDITOR_BASE_URL=https://n8n.leadingai.info/
+      - VUE_APP_URL_BASE_API=https://n8n.leadingai.info/
+    volumes:
+      - n8n_storage:/home/node/.n8n
+      - ./n8n/backup:/backup
+      - ./shared:/data/shared
+    # ADD: Config and registry files
+      - ./config:/data/config:ro
+      - ./workflow-registry:/data/workflow-registry:ro
+    depends_on:
+      n8n-import:
+        condition: service_completed_successfully
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`n8n.leadingai.info`)"
+      - "traefik.http.routers.n8n.tls=true"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+
+networks:
+  traefik:
+    external: true

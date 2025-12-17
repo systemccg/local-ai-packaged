@@ -1,0 +1,62 @@
+{
+  "name": "Graffiti Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "3f7f8429-9932-4037-9082-79a29d1393ee",
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://graphiti-mcp-neo4j:8000/mcp",
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "add_memory"
+            },
+            {
+              "name": "args",
+              "value": {
+                "name": "Test Episode",
+                "episode_body": "This is a test episode from n8n.",
+                "group_id": "n8n-test"
+              }
+            }
+          ]
+        }
+      },
+      "id": "d9e0b8a0-2b6a-4b1b-9e0e-8e6a3b1b9e0e",
+      "name": "Graffiti MCP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Graffiti MCP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": "1"
+}

@@ -1,0 +1,186 @@
+{
+  "name": "Test RAG Agent - Multi-Tenant",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-greg",
+      "name": "Test as Greg (CoCreators)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger-joanna",
+      "name": "Test as Joanna (IOM)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 500]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "jwt-greg",
+              "name": "jwt_token",
+              "value": "={{ $env.GREG_JWT_TOKEN }}",
+              "type": "string"
+            },
+            {
+              "id": "tenant-greg",
+              "name": "tenant_id",
+              "value": "mk3029839",
+              "type": "string"
+            },
+            {
+              "id": "user-greg",
+              "name": "user_email",
+              "value": "gwasmuth@gmail.com",
+              "type": "string"
+            },
+            {
+              "id": "user-id-greg",
+              "name": "user_id",
+              "value": "b6015d8d-e018-46b2-a1ff-3598a13f10c1",
+              "type": "string"
+            },
+            {
+              "id": "query-greg",
+              "name": "query",
+              "value": "What documents do I have access to?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-greg-context",
+      "name": "Set Greg Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "jwt-joanna",
+              "name": "jwt_token",
+              "value": "={{ $env.JOANNA_JWT_TOKEN }}",
+              "type": "string"
+            },
+            {
+              "id": "tenant-joanna",
+              "name": "tenant_id",
+              "value": "test-tenant-001",
+              "type": "string"
+            },
+            {
+              "id": "user-joanna",
+              "name": "user_email",
+              "value": "jowasmuth@gmail.com",
+              "type": "string"
+            },
+            {
+              "id": "user-id-joanna",
+              "name": "user_id",
+              "value": "9578aa8f-886a-46ea-86ff-e4ccc3d983a1",
+              "type": "string"
+            },
+            {
+              "id": "query-joanna",
+              "name": "query",
+              "value": "What documents do I have access to?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-joanna-context",
+      "name": "Set Joanna Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [440, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/rag-chat",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.jwt_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatInput",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "sessionId",
+              "value": "={{ $json.user_id }}-{{ $now.toUnixInteger() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-rag-agent",
+      "name": "Call RAG Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 400]
+    },
+    {
+      "parameters": {
+        "content": "## Multi-Tenant RAG Agent Test Workflow\n\n### Purpose\nTest the RAG Agent workflow with proper JWT authentication and tenant isolation.\n\n### Test Users\n\n**Greg Wasmuth (CoCreators tenant)**\n- Email: gwasmuth@gmail.com\n- User ID: b6015d8d-e018-46b2-a1ff-3598a13f10c1\n- Tenant: mk3029839 (CoCreators)\n- Role: admin\n\n**Joanna Wasmuth (IOM tenant)**\n- Email: jowasmuth@gmail.com\n- User ID: 9578aa8f-886a-46ea-86ff-e4ccc3d983a1\n- Tenant: test-tenant-001 (IOM)\n- Role: admin\n\n### How to Use\n\n1. **Generate JWT Tokens** (see script below)\n2. **Set environment variables** in n8n:\n   - GREG_JWT_TOKEN\n   - JOANNA_JWT_TOKEN\n3. **Click manual trigger** for the user you want to test\n4. **View results** to verify tenant isolation\n\n### Expected Behavior\n\n- Greg should only see CoCreators documents\n- Joanna should only see IOM documents\n- No cross-tenant data leakage\n\n### JWT Token Format\n\nThe JWT must include:\n```json\n{\n  \"sub\": \"<user_id>\",\n  \"email\": \"<user_email>\",\n  \"tenant_id\": \"<tenant_id>\",\n  \"role\": \"<user_role>\",\n  \"iat\": <issued_at_timestamp>,\n  \"exp\": <expiration_timestamp>\n}\n```\n\n### Generate JWT Tokens\n\nUse the Python script in:\n`/root/local-ai-packaged/n8n/scripts/generate_jwt_tokens.py`",
+        "height": 827,
+        "width": 572,
+        "color": 4
+      },
+      "id": "sticky-note-instructions",
+      "name": "Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [840, 240]
+    }
+  ],
+  "connections": {
+    "Test as Greg (CoCreators)": {
+      "main": [[{ "node": "Set Greg Context", "type": "main", "index": 0 }]]
+    },
+    "Test as Joanna (IOM)": {
+      "main": [[{ "node": "Set Joanna Context", "type": "main", "index": 0 }]]
+    },
+    "Set Greg Context": {
+      "main": [[{ "node": "Call RAG Agent", "type": "main", "index": 0 }]]
+    },
+    "Set Joanna Context": {
+      "main": [[{ "node": "Call RAG Agent", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-11-03T22:30:00.000Z",
+  "versionId": "test-v1",
+  "active": false
+}

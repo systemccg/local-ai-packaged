@@ -1,0 +1,51 @@
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+.env.test
+
+# Data directories
+volumes/
+shared/
+neo4j/
+shared-backup/
+
+# SearXNG configs (may contain secrets)
+searxng/settings.yml
+searxng/uwsgi*
+
+# Migration data (contains secrets and databases)
+migration_*/
+secrets_*.tar.gz
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite-*
+backups/*.sql
+backups/*.gz
+backups/*.tar
+
+# Docker volumes backups
+*.tar.gz
+docker_volumes/
+
+# Node modules and dependencies
+node_modules/
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.log
+tmp/
+temp/
